@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><script src="chrome-extension://dheimbmpmkbepjjcobigjacfepohombn/contentscript.js"></script><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KIN | Korea 주식회사</title>
 <meta name="description" content="Korea 주식회사(KIN) 홈페이지 - 우리반 소식, 뉴스, 백마초 급식·행사·공지">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&amp;family=Noto+Sans+KR:wght@400;700&amp;display=swap" rel="stylesheet">
 <style>
   :root {
     --sky: #8fd0f7;
@@ -336,7 +335,7 @@
     </nav>
   </header>
 
-  <div id="edit-bar" class="edit-bar" hidden>
+  <div id="edit-bar" class="edit-bar" hidden="">
     <div class="edit-info">
       <span>✏️ 편집 모드</span>
       <span id="save-status" class="status" aria-live="polite"></span>
@@ -352,8 +351,8 @@
     <!-- 홈 -->
     <section id="page-home" class="page" aria-labelledby="home-title">
       <div class="card hero">
-        <h1 id="home-title" data-edit data-path="home.title" data-single></h1>
-        <p data-edit data-path="home.intro"></p>
+        <h1 id="home-title" data-edit="" data-path="home.title" data-single=""></h1>
+        <p data-edit="" data-path="home.intro"></p>
       </div>
 
       <div class="card">
@@ -363,24 +362,24 @@
         </div>
         <div class="field edit-only">
           <label>바로가기 버튼 이름</label>
-          <span data-edit data-path="school.linkLabel" data-single></span>
+          <span data-edit="" data-path="school.linkLabel" data-single=""></span>
         </div>
         <div class="field edit-only">
           <label>학교 홈페이지 주소</label>
-          <span data-edit data-path="school.link" data-single></span>
+          <span data-edit="" data-path="school.link" data-single=""></span>
         </div>
         <div class="notes">
           <div class="note">
             <h3>🍚 이번 주 급식</h3>
-            <p data-edit data-path="school.meal"></p>
+            <p data-edit="" data-path="school.meal"></p>
           </div>
           <div class="note">
             <h3>📅 행사 일정</h3>
-            <p data-edit data-path="school.schedule"></p>
+            <p data-edit="" data-path="school.schedule"></p>
           </div>
           <div class="note">
             <h3>📢 공지사항</h3>
-            <p data-edit data-path="school.notice"></p>
+            <p data-edit="" data-path="school.notice"></p>
           </div>
         </div>
       </div>
@@ -417,7 +416,7 @@
         </form>
         <p id="auth-msg" class="msg" aria-live="polite"></p>
 
-        <div id="dev-panel" hidden>
+        <div id="dev-panel" hidden="">
           <p class="ok-line">✅ 인증되었습니다. 지금은 편집 모드입니다.</p>
           <p>홈 · 우리반 소식 · 뉴스 페이지에서 점선 상자 안의 글자를 클릭해 고치세요. 새 글은 "새 글 쓰기" 버튼으로 추가합니다.</p>
 
@@ -433,11 +432,11 @@
               <input id="token-input" type="password" placeholder="github_pat_ 로 시작하는 토큰" autocomplete="off">
             </div>
             <div class="form-row">
-              <label class="check"><input id="remember-token" type="checkbox" checked> 이 컴퓨터에 토큰 기억하기 (공용 컴퓨터에서는 끄세요)</label>
+              <label class="check"><input id="remember-token" type="checkbox" checked=""> 이 컴퓨터에 토큰 기억하기 (공용 컴퓨터에서는 끄세요)</label>
             </div>
             <div class="form-row">
               <button id="btn-connect" class="btn btn-primary" type="button">연결하기</button>
-              <button id="btn-disconnect" class="btn" type="button" hidden>연결 끊기</button>
+              <button id="btn-disconnect" class="btn" type="button" hidden="">연결 끊기</button>
             </div>
             <p class="hint">연결해 두면 글을 고친 뒤 몇 초 안에 GitHub 저장소의 <code>index.html</code>이 자동으로 바뀌고, 1~2분 뒤 홈페이지에 반영됩니다. 토큰은 이 브라우저에만 저장되고 홈페이지 파일에는 절대 들어가지 않습니다. 토큰 만드는 방법은 가이드 7장에 있습니다.</p>
           </div>
@@ -463,19 +462,19 @@
 
 </div>
 
-<div id="toast" class="toast" role="status" hidden></div>
+<div id="toast" class="toast" role="status" hidden=""></div>
 
 <!-- 홈페이지 내용 (저장하면 이 부분이 새 내용으로 바뀝니다) -->
 <script id="site-data" type="application/json">
 {
   "admin": {
     "passwordHash": "350748e930de5b1ec5774e22c4e23d1470d489f0819a2ba3b6a921c93025d084",
-    "repo": ""
+    "repo": "phj4082/kin"
   },
-  "updatedAt": "2026-09-13",
+  "updatedAt": "2026-09-13 20:35:31",
   "home": {
     "title": "Korea 주식회사(KIN) 홈페이지에 오신 것을 환영합니다",
-    "intro": "우리반 소식과 뉴스, 그리고 백마초 급식·행사·공지를 한곳에서 볼 수 있어요.\n개발자 인증을 하면 이 홈페이지의 글을 직접 고칠 수 있습니다."
+    "intro": "우리반 소식과 뉴스, 그리고 백마초 급식·행사·공지를 한곳에서 볼 수 있어요."
   },
   "school": {
     "linkLabel": "백마초 홈페이지 바로가기",
@@ -1134,6 +1133,4 @@
     setAutosaveDelay: function (ms) { AUTOSAVE_DELAY = ms; }
   };
 })();
-</script>
-</body>
-</html>
+</script></body></html>
