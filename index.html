@@ -114,7 +114,13 @@
     background: var(--edit);
     border-bottom: 3px solid var(--ink);
   }
+  .edit-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
   .edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .status { font-size: 15px; }
+  .status.ok { color: var(--green); font-weight: 700; }
+  .status.err { color: var(--red); font-weight: 700; }
+  .status.busy { color: var(--blue); font-weight: 700; }
 
   /* ---------- 본문 ---------- */
   .wrap { padding: 28px; background: var(--tint); }
@@ -209,6 +215,7 @@
   }
   .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
   .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: 3px 3px 0 var(--ink); }
   .btn-primary { background: var(--red); color: #fff; }
   .btn-danger { color: var(--red); }
   .btn-small { font-size: 16px; padding: 4px 10px; }
@@ -220,10 +227,10 @@
   }
 
   /* 개발자 인증 */
-  .narrow { max-width: 600px; margin: 0 auto; }
+  .narrow { max-width: 640px; margin: 0 auto; }
   .narrow h1 { font-size: 34px; margin: 0 0 8px; }
   .auth-form { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
-  .auth-form input {
+  .auth-form input, .form-row input[type="text"], .form-row input[type="password"] {
     flex: 1;
     min-width: 180px;
     font: inherit;
@@ -234,10 +241,16 @@
   .msg { margin: 0; min-height: 1.6em; }
   .msg.err { color: var(--red); }
   .ok-line { color: var(--green); font-weight: 700; margin: 0 0 6px; }
-  .steps { margin: 8px 0 0; padding-left: 22px; }
-  .steps li { margin-bottom: 8px; }
-  .hint { font-size: 15px; color: var(--muted); margin: 14px 0 0; }
+  .hint { font-size: 15px; color: var(--muted); margin: 10px 0 0; }
   code { font-family: Consolas, "Courier New", monospace; font-size: 0.95em; background: var(--tint); padding: 0 4px; border: 1px solid #c9dcec; }
+
+  .panel-box { border: 2px solid var(--ink); background: var(--tint); padding: 14px 16px 16px; margin: 16px 0 0; }
+  .panel-box h2 { font-size: 23px; margin: 0 0 8px; }
+  .form-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 8px 0; }
+  .form-row label { min-width: 96px; font-size: 15px; color: var(--muted); }
+  .form-row input[type="text"], .form-row input[type="password"] { font-size: 15px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink); min-width: 0; }
+  .check input { width: 18px; height: 18px; margin: 0; }
 
   /* 편집 모드 */
   body:not(.editing) .edit-only { display: none !important; }
@@ -324,10 +337,12 @@
   </header>
 
   <div id="edit-bar" class="edit-bar" hidden>
-    <span>✏️ 편집 모드 — 점선 상자 안의 글자를 클릭해서 고치세요.</span>
+    <div class="edit-info">
+      <span>✏️ 편집 모드</span>
+      <span id="save-status" class="status" aria-live="polite"></span>
+    </div>
     <div class="edit-actions">
-      <button id="btn-save" class="btn btn-primary" type="button">저장하기 (index.html 내려받기)</button>
-      <button id="btn-pw" class="btn" type="button">비밀번호 변경</button>
+      <button id="btn-save" class="btn btn-primary" type="button">지금 저장</button>
       <button id="btn-exit" class="btn" type="button">편집 종료</button>
     </div>
   </div>
@@ -404,12 +419,37 @@
 
         <div id="dev-panel" hidden>
           <p class="ok-line">✅ 인증되었습니다. 지금은 편집 모드입니다.</p>
-          <ol class="steps">
-            <li>홈 · 우리반 소식 · 뉴스 페이지에서 점선 상자 안의 글자를 클릭해 고치세요. 새 글은 "새 글 쓰기" 버튼으로 추가합니다.</li>
-            <li>다 고쳤으면 위쪽 노란 막대의 <b>저장하기</b>를 누르세요. 수정된 <code>index.html</code> 파일이 내려받아집니다.</li>
-            <li>그 파일을 GitHub 저장소에 올려서(같은 이름으로 덮어쓰기) 1~2분 기다리면 모두에게 반영됩니다.</li>
-          </ol>
-          <p class="hint">저장하기를 누르지 않고 창을 닫으면 고친 내용은 사라집니다. 비밀번호는 위쪽 막대의 "비밀번호 변경"에서 바꿀 수 있습니다.</p>
+          <p>홈 · 우리반 소식 · 뉴스 페이지에서 점선 상자 안의 글자를 클릭해 고치세요. 새 글은 "새 글 쓰기" 버튼으로 추가합니다.</p>
+
+          <div class="panel-box">
+            <h2>자동 저장 — GitHub 연결</h2>
+            <p id="conn-status" class="status">연결 안 됨</p>
+            <div class="form-row">
+              <label for="repo-input">저장소</label>
+              <input id="repo-input" type="text" placeholder="아이디/저장소이름  예) phj4082/kin" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="form-row">
+              <label for="token-input">GitHub 토큰</label>
+              <input id="token-input" type="password" placeholder="github_pat_ 로 시작하는 토큰" autocomplete="off">
+            </div>
+            <div class="form-row">
+              <label class="check"><input id="remember-token" type="checkbox" checked> 이 컴퓨터에 토큰 기억하기 (공용 컴퓨터에서는 끄세요)</label>
+            </div>
+            <div class="form-row">
+              <button id="btn-connect" class="btn btn-primary" type="button">연결하기</button>
+              <button id="btn-disconnect" class="btn" type="button" hidden>연결 끊기</button>
+            </div>
+            <p class="hint">연결해 두면 글을 고친 뒤 몇 초 안에 GitHub 저장소의 <code>index.html</code>이 자동으로 바뀌고, 1~2분 뒤 홈페이지에 반영됩니다. 토큰은 이 브라우저에만 저장되고 홈페이지 파일에는 절대 들어가지 않습니다. 토큰 만드는 방법은 가이드 7장에 있습니다.</p>
+          </div>
+
+          <div class="panel-box">
+            <h2>다른 방법 · 관리</h2>
+            <div class="form-row">
+              <button id="btn-download" class="btn" type="button">파일로 내려받기</button>
+              <button id="btn-pw" class="btn" type="button">비밀번호 변경</button>
+            </div>
+            <p class="hint">토큰 없이 쓸 때는 "파일로 내려받기"로 받은 <code>index.html</code>을 GitHub 저장소에 올려서(덮어쓰기) 반영합니다. 고친 내용은 이 브라우저에도 임시 저장되어, 다음에 인증하면 이어서 할 수 있습니다.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -425,11 +465,12 @@
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<!-- 홈페이지 내용 (편집 모드에서 저장하면 이 부분이 새 내용으로 바뀝니다) -->
+<!-- 홈페이지 내용 (저장하면 이 부분이 새 내용으로 바뀝니다) -->
 <script id="site-data" type="application/json">
 {
   "admin": {
-    "passwordHash": "350748e930de5b1ec5774e22c4e23d1470d489f0819a2ba3b6a921c93025d084"
+    "passwordHash": "350748e930de5b1ec5774e22c4e23d1470d489f0819a2ba3b6a921c93025d084",
+    "repo": ""
   },
   "updatedAt": "2026-09-13",
   "home": {
@@ -469,6 +510,8 @@
 
   var PAGES = ['home', 'class', 'news', 'dev'];
   var LISTS = ['classNews', 'news'];
+  var AUTOSAVE_DELAY = 6000;   /* 마지막으로 글자를 고친 뒤 이 시간(ms)이 지나면 자동 저장 */
+  var API = 'https://api.github.com';
 
   var data;
   try {
@@ -483,6 +526,9 @@
   LISTS.forEach(function (k) { if (!Array.isArray(data[k])) data[k] = []; });
 
   var state = { editing: false, dirty: false, data: data };
+
+  /* GitHub 자동 저장 상태 (토큰은 여기 메모리와 브라우저 저장소에만 있고, 파일에는 절대 안 들어감) */
+  var gh = { token: '', repo: '', sha: null, timer: null, inflight: false, pending: false, connected: false };
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -514,11 +560,63 @@
       sel.addRange(range);
     } catch (e) { /* 선택이 안 되어도 편집에는 문제 없음 */ }
   }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
   function today() {
     var d = new Date();
-    var p = function (n) { return (n < 10 ? '0' : '') + n; };
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
+  function nowStamp() {
+    var d = new Date();
+    return today() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  /* ---------- 브라우저 저장소 (안 되는 환경에서는 조용히 건너뜀) ---------- */
+  var store = {
+    get: function (key, session) {
+      try { return (session ? sessionStorage : localStorage).getItem(key); } catch (e) { return null; }
+    },
+    set: function (key, value, session) {
+      try { (session ? sessionStorage : localStorage).setItem(key, value); } catch (e) { /* 저장 불가 환경 */ }
+    },
+    remove: function (key) {
+      try { localStorage.removeItem(key); } catch (e) { /* */ }
+      try { sessionStorage.removeItem(key); } catch (e) { /* */ }
+    }
+  };
+
+  /* 주소를 보고 GitHub 저장소 이름을 알아냄 (예: phj4082.github.io/kin/ → phj4082/kin) */
+  function detectRepo() {
+    var host = (location.hostname || '').toLowerCase();
+    var m = /^([a-z0-9-]+)\.github\.io$/.exec(host);
+    if (!m) return '';
+    var seg = location.pathname.split('/').filter(Boolean)[0];
+    return m[1] + '/' + (seg && seg.indexOf('.') === -1 ? seg : host);
+  }
+  function normalizeRepo(s) {
+    s = String(s || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '').replace(/\/+$/, '');
+    return /^[\w.-]+\/[\w.-]+$/.test(s) ? s : '';
+  }
+  function repoKey() {
+    return gh.repo || detectRepo() || normalizeRepo(state.data.admin.repo) || normalizeRepo(store.get('kin-repo')) || 'local';
+  }
+  var KEY_TOKEN = function () { return 'kin-token:' + repoKey(); };
+  var KEY_DRAFT = function () { return 'kin-draft:' + repoKey(); };
+  var KEY_SNAP = function () { return 'kin-saved:' + repoKey(); };
+
+  /* 이 브라우저에서 방금 GitHub에 저장한 내용이 아직 홈페이지에 반영되기 전이면, 저장한 내용을 먼저 보여 줌 */
+  (function applySavedSnapshot() {
+    var raw = store.get(KEY_SNAP());
+    if (!raw) return;
+    try {
+      var snap = JSON.parse(raw);
+      if (snap && snap.data && String(snap.data.updatedAt || '') > String(state.data.updatedAt || '')) {
+        state.data = snap.data;
+        LISTS.forEach(function (k) { if (!Array.isArray(state.data[k])) state.data[k] = []; });
+      } else {
+        store.remove(KEY_SNAP());
+      }
+    } catch (e) { store.remove(KEY_SNAP()); }
+  })();
 
   /* ---------- 화면 그리기 ---------- */
   function renderFields() {
@@ -548,7 +646,8 @@
 
   function renderFooter() {
     $('#year').textContent = new Date().getFullYear();
-    $('#updated').textContent = state.data.updatedAt ? '마지막 업데이트 ' + state.data.updatedAt : '';
+    var u = String(state.data.updatedAt || '');
+    $('#updated').textContent = u ? '마지막 업데이트 ' + u.slice(0, 16) : '';
   }
 
   function renderPosts(key) {
@@ -620,6 +719,14 @@
     $('#auth-form').hidden = true;
     $('#dev-panel').hidden = false;
     LISTS.forEach(renderPosts);
+    restoreDraft();
+    $('#repo-input').value = gh.repo || detectRepo() || normalizeRepo(state.data.admin.repo) || '';
+    var saved = store.get(KEY_TOKEN()) || store.get(KEY_TOKEN(), true);
+    if (saved && !gh.connected) {
+      connect(saved, $('#repo-input').value, !!store.get(KEY_TOKEN()), true);
+    } else {
+      updateConnUI();
+    }
   }
 
   function exitEdit() {
@@ -633,7 +740,13 @@
     renderAll();
   }
 
-  /* 글자를 고칠 때마다 바로 데이터에 반영 */
+  /* 글자를 고칠 때마다 바로 데이터에 반영 → 임시 저장 → 자동 저장 예약 */
+  function markChanged() {
+    state.dirty = true;
+    saveDraft();
+    scheduleAutoSave();
+  }
+
   document.addEventListener('input', function (e) {
     if (!state.editing || !e.target || !e.target.closest) return;
     var node = e.target.closest('[data-edit]');
@@ -648,7 +761,7 @@
       var i = Number(art.dataset.index);
       if (state.data[key] && state.data[key][i]) state.data[key][i][node.dataset.field] = text;
     }
-    state.dirty = true;
+    markChanged();
   });
 
   /* 제목·날짜처럼 한 줄짜리 칸에서는 Enter로 줄을 바꾸지 않음 */
@@ -665,7 +778,7 @@
     if (add && state.editing) {
       var key = add.dataset.add;
       state.data[key].unshift({ date: today(), title: '새 글 제목', body: '내용을 적어 주세요.' });
-      state.dirty = true;
+      markChanged();
       renderPosts(key);
       var first = $('#list-' + key + ' .post-title');
       if (first) { first.focus(); selectAll(first); }
@@ -679,11 +792,36 @@
       if (!post) return;
       if (confirm('"' + (post.title || '제목 없음') + '" 글을 삭제할까요?')) {
         state.data[k].splice(idx, 1);
-        state.dirty = true;
+        markChanged();
         renderPosts(k);
       }
     }
   });
+
+  /* ---------- 임시 저장 (이 브라우저에만) ---------- */
+  function saveDraft() {
+    store.set(KEY_DRAFT(), JSON.stringify({ savedAt: nowStamp(), data: state.data }));
+  }
+  function clearDraft() { store.remove(KEY_DRAFT()); }
+  function restoreDraft() {
+    var raw = store.get(KEY_DRAFT());
+    if (!raw) return;
+    try {
+      var d = JSON.parse(raw);
+      if (!d || !d.data) { clearDraft(); return; }
+      if (JSON.stringify(d.data) === JSON.stringify(state.data)) { clearDraft(); return; }
+      if (confirm('저장하지 않은 임시 저장본이 있습니다. (' + d.savedAt + ')\n이어서 편집할까요?\n\n[확인] 임시 저장본 불러오기   [취소] 임시 저장본 버리기')) {
+        state.data = d.data;
+        LISTS.forEach(function (k) { if (!Array.isArray(state.data[k])) state.data[k] = []; });
+        window.KIN.data = state.data;
+        renderAll();
+        state.dirty = true;
+        scheduleAutoSave();
+      } else {
+        clearDraft();
+      }
+    } catch (e) { clearDraft(); }
+  }
 
   /* ---------- 개발자 인증 ---------- */
   function sha256(text) {
@@ -720,14 +858,14 @@
     });
   });
 
-  /* ---------- 저장하기: 새 index.html 만들어 내려받기 ---------- */
+  /* ---------- 새 index.html 만들기 / 내려받기 ---------- */
   function buildExportHTML() {
     var out = JSON.parse(JSON.stringify(state.data));
-    out.updatedAt = today();
+    out.updatedAt = nowStamp();
     var json = JSON.stringify(out, null, 2).replace(/</g, '\\u003c');
     var re = /(<script id="site-data" type="application\/json">)[\s\S]*?(<\/script>)/;
     if (!re.test(ORIGINAL_HTML)) throw new Error('site-data 블록을 찾지 못했습니다');
-    return ORIGINAL_HTML.replace(re, function (m, open, close) { return open + '\n' + json + '\n' + close; });
+    return { html: ORIGINAL_HTML.replace(re, function (m, open, close) { return open + '\n' + json + '\n' + close; }), data: out };
   }
 
   function download(name, text) {
@@ -742,6 +880,20 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  function downloadNow() {
+    try {
+      var built = buildExportHTML();
+      state.data.updatedAt = built.data.updatedAt;
+      state.dirty = false;
+      clearDraft();
+      renderFooter();
+      download('index.html', built.html);
+      toast('index.html을 내려받았습니다. 이 파일을 GitHub 저장소에 올려서(덮어쓰기) 1~2분 기다리면 홈페이지에 반영됩니다.');
+    } catch (err) {
+      alert('저장 중 문제가 생겼습니다: ' + err.message);
+    }
+  }
+
   var toastTimer;
   function toast(text) {
     var t = $('#toast');
@@ -751,18 +903,189 @@
     toastTimer = setTimeout(function () { t.hidden = true; }, 8000);
   }
 
-  $('#btn-save').addEventListener('click', function () {
-    try {
-      var html = buildExportHTML();
-      state.data.updatedAt = today();
-      state.dirty = false;
-      renderFooter();
-      download('index.html', html);
-      toast('index.html을 내려받았습니다. 이 파일을 GitHub 저장소에 올려서(덮어쓰기) 1~2분 기다리면 홈페이지에 반영됩니다.');
-    } catch (err) {
-      alert('저장 중 문제가 생겼습니다: ' + err.message);
+  /* ---------- GitHub 자동 저장 ---------- */
+  function setStatus(text, kind) {
+    var s = $('#save-status');
+    s.textContent = text;
+    s.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function updateConnUI() {
+    var c = $('#conn-status');
+    if (gh.connected) {
+      c.textContent = '연결됨: ' + gh.repo + ' — 글을 고치면 자동으로 저장됩니다.';
+      c.className = 'status ok';
+      $('#btn-connect').textContent = '다시 연결하기';
+      $('#btn-disconnect').hidden = false;
+      if (!gh.inflight && !gh.timer) setStatus('자동 저장 켜짐 (' + gh.repo + ')', 'ok');
+    } else {
+      c.textContent = '연결 안 됨';
+      c.className = 'status';
+      $('#btn-connect').textContent = '연결하기';
+      $('#btn-disconnect').hidden = true;
+      setStatus('자동 저장 꺼짐 — 개발자 인증 페이지에서 GitHub 토큰을 연결하면 켜집니다.', '');
     }
+  }
+
+  function b64utf8(str) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  function ghFetch(path, options) {
+    options = options || {};
+    var headers = {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': 'Bearer ' + gh.token,
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    if (options.body) headers['Content-Type'] = 'application/json';
+    return fetch(API + path, { method: options.method || 'GET', headers: headers, body: options.body ? JSON.stringify(options.body) : undefined })
+      .catch(function () { var e = new Error('인터넷 연결을 확인해 주세요.'); e.status = 0; throw e; })
+      .then(function (res) {
+        return res.text().then(function (t) {
+          var json = null;
+          try { json = t ? JSON.parse(t) : null; } catch (e2) { /* */ }
+          if (!res.ok) {
+            var e = new Error(friendlyError(res.status, json));
+            e.status = res.status;
+            throw e;
+          }
+          return json;
+        });
+      });
+  }
+
+  function friendlyError(status, json) {
+    var detail = json && json.message ? ' (' + json.message + ')' : '';
+    if (status === 401) return '토큰이 잘못되었거나 만료되었습니다. 새 토큰을 만들어 다시 연결해 주세요.';
+    if (status === 403) return '토큰에 이 저장소의 Contents 쓰기(Read and write) 권한이 없습니다.' + detail;
+    if (status === 404) return '저장소를 찾을 수 없습니다. 저장소 이름(아이디/저장소)과 토큰의 저장소 접근 범위를 확인해 주세요.';
+    return '오류 ' + status + detail;
+  }
+
+  function fetchSha() {
+    return ghFetch('/repos/' + gh.repo + '/contents/index.html').then(function (j) { return j && j.sha ? j.sha : null; })
+      .catch(function (e) { if (e.status === 404) return null; throw e; });
+  }
+
+  function putFile(html, sha) {
+    var body = { message: '홈페이지 내용 수정 (자동 저장) ' + nowStamp(), content: b64utf8(html) };
+    if (sha) body.sha = sha;
+    return ghFetch('/repos/' + gh.repo + '/contents/index.html', { method: 'PUT', body: body });
+  }
+
+  function connect(token, repo, remember, silent) {
+    token = String(token || '').trim();
+    repo = normalizeRepo(repo);
+    if (!token) { if (!silent) alert('GitHub 토큰을 입력해 주세요.'); return Promise.resolve(false); }
+    if (!repo) { if (!silent) alert('저장소는 "아이디/저장소이름" 모양으로 적어 주세요. 예) phj4082/kin'); return Promise.resolve(false); }
+    var prevToken = gh.token, prevRepo = gh.repo;
+    gh.token = token; gh.repo = repo;
+    $('#conn-status').textContent = '연결 확인 중…';
+    $('#conn-status').className = 'status busy';
+    return ghFetch('/repos/' + repo).then(function (info) {
+      if (info && info.permissions && info.permissions.push === false) {
+        throw new Error('토큰에 이 저장소의 쓰기 권한이 없습니다. 토큰을 만들 때 Contents 권한을 "Read and write"로 선택해 주세요.');
+      }
+      return fetchSha();
+    }).then(function (sha) {
+      gh.sha = sha;
+      gh.connected = true;
+      state.data.admin.repo = repo;
+      store.remove(KEY_TOKEN());
+      store.set(KEY_TOKEN(), token, !remember);
+      store.set('kin-repo', repo);   /* 파일을 컴퓨터에서 직접 열었을 때도 같은 저장소의 기록을 찾기 위해 */
+      $('#token-input').value = '';
+      $('#repo-input').value = repo;
+      updateConnUI();
+      if (!silent) toast('GitHub와 연결되었습니다. 이제 글을 고치면 몇 초 뒤 자동으로 저장됩니다.');
+      if (state.dirty) scheduleAutoSave();
+      return true;
+    }).catch(function (e) {
+      gh.token = prevToken; gh.repo = prevRepo; gh.connected = !!prevToken;
+      updateConnUI();
+      $('#conn-status').textContent = '연결 실패: ' + e.message;
+      $('#conn-status').className = 'status err';
+      if (e.status === 401) store.remove(KEY_TOKEN());
+      return false;
+    });
+  }
+
+  function disconnect() {
+    clearTimeout(gh.timer); gh.timer = null;
+    store.remove(KEY_TOKEN());
+    store.remove('kin-repo');
+    gh.token = ''; gh.repo = ''; gh.sha = null; gh.connected = false;
+    updateConnUI();
+  }
+
+  function scheduleAutoSave() {
+    if (!gh.connected) return;
+    clearTimeout(gh.timer);
+    setStatus('고치는 중… 잠시 후 자동 저장', 'busy');
+    gh.timer = setTimeout(function () { gh.timer = null; commitNow(); }, AUTOSAVE_DELAY);
+  }
+
+  function commitNow() {
+    if (!gh.connected) return Promise.resolve(false);
+    if (gh.inflight) { gh.pending = true; return Promise.resolve(false); }
+    clearTimeout(gh.timer); gh.timer = null;
+    gh.inflight = true;
+    setStatus('GitHub에 저장 중…', 'busy');
+    var built;
+    try { built = buildExportHTML(); } catch (e) {
+      gh.inflight = false;
+      setStatus('저장 실패: ' + e.message, 'err');
+      return Promise.resolve(false);
+    }
+    var attempt = function (sha) { return putFile(built.html, sha); };
+    return (gh.sha ? Promise.resolve(gh.sha) : fetchSha()).then(attempt)
+      .catch(function (e) {
+        if (e.status === 409 || e.status === 422) {   /* 다른 곳에서 파일이 바뀐 경우: 최신 sha로 한 번 더 */
+          return fetchSha().then(attempt);
+        }
+        throw e;
+      })
+      .then(function (res) {
+        gh.sha = res && res.content && res.content.sha ? res.content.sha : null;
+        state.data.updatedAt = built.data.updatedAt;
+        state.dirty = false;
+        store.set(KEY_SNAP(), JSON.stringify({ data: built.data }));
+        clearDraft();
+        renderFooter();
+        setStatus('저장됨 ' + built.data.updatedAt.slice(11, 16) + ' — 홈페이지에는 1~2분 뒤 반영됩니다.', 'ok');
+        return true;
+      })
+      .catch(function (e) {
+        setStatus('저장 실패: ' + e.message + ' — "지금 저장"으로 다시 시도하거나 "파일로 내려받기"를 쓰세요.', 'err');
+        return false;
+      })
+      .then(function (ok) {
+        gh.inflight = false;
+        if (gh.pending) { gh.pending = false; return commitNow(); }
+        return ok;
+      });
+  }
+
+  $('#btn-connect').addEventListener('click', function () {
+    var token = $('#token-input').value;
+    var saved = store.get(KEY_TOKEN()) || store.get(KEY_TOKEN(), true);
+    if (!token && saved) token = saved;
+    connect(token, $('#repo-input').value, $('#remember-token').checked, false);
   });
+  $('#btn-disconnect').addEventListener('click', function () {
+    if (confirm('GitHub 연결을 끊을까요? 이 컴퓨터에 기억해 둔 토큰도 지워집니다.')) disconnect();
+  });
+
+  $('#btn-save').addEventListener('click', function () {
+    if (gh.connected) commitNow(); else downloadNow();
+  });
+  $('#btn-download').addEventListener('click', downloadNow);
 
   $('#btn-pw').addEventListener('click', function () {
     var a = prompt('새 비밀번호를 입력하세요. (4자 이상)');
@@ -774,21 +1097,28 @@
     if (b.trim() !== pw) { alert('두 번 입력한 비밀번호가 서로 다릅니다.'); return; }
     sha256(pw).then(function (hash) {
       state.data.admin.passwordHash = hash;
-      state.dirty = true;
-      toast('비밀번호를 바꿨습니다. "저장하기"로 index.html을 내려받아 GitHub에 올려야 새 비밀번호가 적용됩니다.');
+      markChanged();
+      toast(gh.connected
+        ? '비밀번호를 바꿨습니다. 몇 초 뒤 자동 저장되고, 1~2분 뒤부터 새 비밀번호로 인증합니다.'
+        : '비밀번호를 바꿨습니다. "파일로 내려받기"로 index.html을 받아 GitHub에 올려야 새 비밀번호가 적용됩니다.');
     }).catch(function () {
       alert('이 주소에서는 비밀번호를 바꿀 수 없습니다.');
     });
   });
 
   $('#btn-exit').addEventListener('click', function () {
-    if (!state.dirty || confirm('편집을 끝낼까요?\n"저장하기"로 내려받지 않은 내용은 창을 닫으면 사라집니다.')) {
+    var unsaved = gh.connected ? (gh.timer || gh.inflight) : state.dirty;
+    if (!unsaved || confirm(gh.connected
+      ? '아직 GitHub에 저장되지 않은 내용이 있습니다. 그래도 편집을 끝낼까요?'
+      : '편집을 끝낼까요?\n고친 내용은 이 브라우저에 임시 저장되어 있지만, "파일로 내려받기"로 GitHub에 올리기 전까지는 홈페이지에 반영되지 않습니다.')) {
+      if (gh.timer) { clearTimeout(gh.timer); gh.timer = null; }
       exitEdit();
     }
   });
 
   window.addEventListener('beforeunload', function (e) {
-    if (state.editing && state.dirty) { e.preventDefault(); e.returnValue = ''; }
+    var unsaved = gh.connected ? (gh.timer || gh.inflight) : (state.editing && state.dirty);
+    if (unsaved) { e.preventDefault(); e.returnValue = ''; }
   });
 
   /* ---------- 시작 ---------- */
@@ -796,7 +1126,13 @@
   showPage(location.hash.slice(1) || 'home');
 
   /* 필요하면 브라우저 콘솔에서 KIN.data 로 내용을 확인할 수 있습니다. */
-  window.KIN = { data: state.data, buildExportHTML: buildExportHTML };
+  window.KIN = {
+    data: state.data,
+    buildExportHTML: function () { return buildExportHTML().html; },
+    saveNow: commitNow,
+    isConnected: function () { return gh.connected; },
+    setAutosaveDelay: function (ms) { AUTOSAVE_DELAY = ms; }
+  };
 })();
 </script>
 </body>
